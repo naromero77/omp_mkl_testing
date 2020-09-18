@@ -1,0 +1,76 @@
+#include <iostream>
+#include "mkl.h"
+#include "mkl_omp_offload.h"
+
+#define SIZE 1024
+
+{% for t in l_unique_output_type %}
+bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+  return gold * (1-tol) <= x && x <= gold * (1 + tol);
+}
+{% endfor %}
+
+int main( int argc, char* argv[] )
+{
+{% for t,name in l_input %}
+  {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+{% endfor %}
+{% for t,name in l_input_inout %}
+  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+{% endfor %}
+
+{% if return_output %}
+  {{return_output[0]}} {{return_output[1]}}_cpu = 0;
+  {{return_output[0]}} {{return_output[1]}}_gpu = 0;
+{% endif %}
+
+  const int incx = 1;
+  const int incy = 1;
+
+  for(int i=0;i<SIZE;i++)
+    {
+{% for t,name in l_input %}
+      {{name}}[i] = 1;
+{% endfor %}
+{% for t,name in l_input_inout %}
+      {{name}}_gpu[i] = 1;
+      {{name}}_gpu[i] = 1;
+{% endfor %}
+    }
+
+{% if return_output %}
+   {{return_output[1]}}_cpu   = cblas_{{name_function}}(SIZE, x, incx, y, incx);
+{% else %}
+   cblas_{{name_function}}(SIZE, x, incx, y, incx);
+{% endif %}
+
+#pragma omp target data map(to:x_input[0:SIZE],y[0:SIZE])
+    {
+      #pragma omp target variant dispatch use_device_ptr(x, y) 
+{% if return_output %}
+   {{return_output[1]}}_gpu = cblas_{{name_function}}(SIZE, x, incx, y, incx);
+{% else %}
+      cblas_{{name_function}}(SIZE, x, incx, y, incx);
+{% endif %}
+    }
+
+{% if return_output %}
+  if (!almost_equal({{return_output[1]}}_gpu, {{return_output[1]}}_cpu, 0.1)) {
+    std::cerr << "Expected: " << {{return_output[1]}}_cpu << " Got: " << {{return_output[1]}}_gpu << std::endl;
+    std::exit(112);
+  }
+{% endif %}
+
+  for(int i=0;i<SIZE;i++)
+    {
+{% for t,name in l_input_inout %}
+  if (!almost_equal({{name}}_gpu[i], {{name}}_cpu[i], 0.1)) {
+    std::cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << std::endl;
+    std::exit(112);
+{% endfor %}
+    }
+
+
+  return 0;
+}
