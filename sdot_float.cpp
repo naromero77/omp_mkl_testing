@@ -57,9 +57,10 @@ int main( int argc, char* argv[] )
   for(int i=0;i<SIZE;i++)
     {
 
-  if (!almost_equal(z[i]_gpu, z[i]_cpu, 0.1)) {
-    std::cerr << "Expected: " << z[i]_cpu << " Got: " << z[i]_gpu << std::endl;
+  if (!almost_equal(z_gpu[i], z_cpu[i], 0.1)) {
+    std::cerr << "Expected: " << z_cpu[i] << " Got: " << z_gpu[i] << std::endl;
     std::exit(112);
+  }
 
     }
 

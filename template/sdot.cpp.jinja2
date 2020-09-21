@@ -68,6 +68,7 @@ int main( int argc, char* argv[] )
   if (!almost_equal({{name}}_gpu[i], {{name}}_cpu[i], 0.1)) {
     std::cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << std::endl;
     std::exit(112);
+  }
 {% endfor %}
     }
 
