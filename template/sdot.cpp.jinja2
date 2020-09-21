@@ -40,12 +40,14 @@ int main( int argc, char* argv[] )
     }
 
 {% if return_output %}
+   {% for t,name in l_input %}
    {{return_output[1]}}_cpu   = cblas_{{name_function}}(SIZE, x, incx, y, incx);
+   {% endfor %}
 {% else %}
    cblas_{{name_function}}(SIZE, x, incx, y, incx);
 {% endif %}
 
-#pragma omp target data map(to:x_input[0:SIZE],y[0:SIZE])
+#pragma omp target data map(to:x[0:SIZE],y[0:SIZE])
     {
       #pragma omp target variant dispatch use_device_ptr(x, y) 
 {% if return_output %}
@@ -60,8 +62,7 @@ int main( int argc, char* argv[] )
     std::cerr << "Expected: " << {{return_output[1]}}_cpu << " Got: " << {{return_output[1]}}_gpu << std::endl;
     std::exit(112);
   }
-{% endif %}
-
+{% else %}
   for(int i=0;i<SIZE;i++)
     {
 {% for t,name in l_input_inout %}
@@ -71,7 +72,7 @@ int main( int argc, char* argv[] )
   }
 {% endfor %}
     }
-
+{% endif %}
 
   return 0;
 }

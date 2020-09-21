@@ -15,15 +15,23 @@ templateEnv = jinja2.Environment(loader=templateLoader)
 template = templateEnv.get_template(f"sdot.cpp.jinja2")
 
 
-for name_,input_t_ in [["ddot", "double"], ["sdot", "float"] ]:
+for name_,input_t_,both_input_output_variables,return_scalar_variable in [["ddot", "double",False,True], ["sdot", "float",False,True] ]:
+# variables that are pure inputs
     l_input_=[[input_t_,"x"],[input_t_,"y"]]
-    l_input_inout_=[[input_t_,"z"]]
+# variables that are both inputs and outputs
+    if both_input_output_variables:
+        l_input_inout_=[[input_t_,"z"]]
+    else:
+        l_input_inout_=[]
+# variables that are pure outputs
+    if return_scalar_variable:
+        return_output_=[input_t_,"result"]
+    else:
+        return_output_= None
 
     l_aggregate_output_=[[input_t_,"x"],[input_t_,"y"]]
 #    l_aggregate_output_=[]
 
-#    return_output_=[input_t_,"result"]
-    return_output_= None
     if return_output_:
         l_unique_output_type_ = set(t_ for t_,name_ in l_aggregate_output_+[return_output_])
     else:
