@@ -12,7 +12,7 @@ bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
 
 int main( int argc, char* argv[] )
 {
-{% for t,name in l_input %}
+{% for t,name in l_aggregate_input %}
   {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*SIZE);
 {% endfor %}
 {% for t,name in l_input_inout %}

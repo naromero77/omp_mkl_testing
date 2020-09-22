@@ -38,10 +38,14 @@ int main( int argc, char* argv[] )
     }
 
 
+   
    result_cpu   = cblas_ddot(SIZE, x, incx, y, incx);
+   
+   result_cpu   = cblas_ddot(SIZE, x, incx, y, incx);
+   
 
 
-#pragma omp target data map(to:x_input[0:SIZE],y[0:SIZE])
+#pragma omp target data map(to:x[0:SIZE],y[0:SIZE])
     {
       #pragma omp target variant dispatch use_device_ptr(x, y) 
 
