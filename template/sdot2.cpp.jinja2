@@ -1,0 +1,55 @@
+#include <iostream>
+#include "mkl.h"
+#include "mkl_omp_offload.h"
+
+#define SIZE 1024
+
+{% for t in l_unique_output_type %}
+bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+  return gold * (1-tol) <= x && x <= gold * (1 + tol);
+}
+{% endfor %}
+
+int main( int argc, char* argv[] )
+{
+
+{% for t,name in l_scalar_input %}
+  {{t}} {{name}} = 1;
+{% endfor %}
+
+{% for t,name in l_aggregate_input %}
+  {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+{% endfor %}
+
+{% for t,name in l_input_output %}
+  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+{% endfor %}
+
+{% if l_output %}
+  {{l_output[0]}} {{l_output[1]}}_cpu = 0;
+  {{l_output[0]}} {{l_output[1]}}_gpu = 0;
+{% endif %}
+
+  for(int i=0;i<SIZE;i++)
+    {
+{% for t,name in l_aggregate_input %}
+      {{name}}[i] = 1;
+{% endfor %}
+{% for t,name in l_input_output %}
+      {{name}}_gpu[i] = 1;
+      {{name}}_gpu[i] = 1;
+{% endfor %}
+    }
+
+{% if l_output %}
+   {{l_output[0]}}_cpu  = cblas_{{name_function}}(l_scalar_input[0][1], l_aggregate_input[0][1],
+   l_scalar_input[1][1], l_aggregate_input[1][1], l_scalar_input[2][1]);
+{% else %}
+   cblas_{{name_function}}(l_scalar_input_[0], l_aggregate_input_[0],
+   l_scalar_input_[1], l_aggregate_input_[1], l_scalar_input_[2]);
+{% endif %}
+
+
+  return 0;
+}
