@@ -2,8 +2,6 @@
 #include "mkl.h"
 #include "mkl_omp_offload.h"
 
-#define SIZE 1024
-
 {% if l_output %}
 bool almost_equal({{l_output[0]}} x, {{l_output[0]}} gold, {{l_output[0]}} tol) {
   return gold * (1-tol) <= x && x <= gold * (1 + tol);
@@ -18,12 +16,12 @@ int main( int argc, char* argv[] )
 {% endfor %}
 
 {% for t,name in l_aggregate_input %}
-  {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+  {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*{{l_scalar_input[0][1]}});
 {% endfor %}
 
 {% for t,name in l_input_output %}
-  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
-  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*SIZE);
+  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*{{l_scalar_input[0][1]}});
+  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*{{l_scalar_input[0][1]}});
 {% endfor %}
 
 {% if l_output %}
@@ -31,7 +29,7 @@ int main( int argc, char* argv[] )
   {{l_output[0]}} {{l_output[1]}}_gpu = 0;
 {% endif %}
 
-  for(int i=0;i<SIZE;i++)
+  for(int i=0;i<{{l_scalar_input[0][1]}};i++)
     {
 {% for t,name in l_aggregate_input %}
       {{name}}[i] = 1;
@@ -50,7 +48,7 @@ int main( int argc, char* argv[] )
     {{l_aggregate_input[1][1]}},
     {{l_scalar_input[2][1]}});
 
-#pragma omp target data map(to:{{l_aggregate_input[0][1]}}[0:SIZE],{{l_aggregate_input[1][1]}}[0:SIZE])
+#pragma omp target data map(to:{{l_aggregate_input[0][1]}}[0:{{l_scalar_input[0][1]}}],{{l_aggregate_input[1][1]}}[0:{{l_scalar_input[0][1]}}])
     {
       #pragma omp target variant dispatch use_device_ptr({{l_aggregate_input[0][1]}}, {{l_aggregate_input[1][1]}}) 
    {{l_output[1]}}_gpu  = cblas_{{name_function}}(

@@ -14,6 +14,8 @@ pEXE = $(wildcard *.exe)
 .PHONY: run
 run: $(addprefix run_, $(basename $(pEXE)))
 
+CXXFLAGS = -fiopenmp -fopenmp-targets=spir64 -D__STRICT_ANSI__
+
 %.exe: %.cpp
 	-$(CXX) $(CXXFLAGS) $(MATH_LIB_FLAGS) $< -o $@
 
