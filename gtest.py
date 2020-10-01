@@ -45,6 +45,7 @@ for function in blas1:
             else:
                 l_scalar_input_.append([atype, name ])
         elif intent == "inout":
+# inout is probably always a pointer, at least in C
             l_input_output_.append([atype, name ])
         elif intent == "out":
 # sanity check on length of l_output_. it should only ever have one

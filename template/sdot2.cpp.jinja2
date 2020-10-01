@@ -4,11 +4,11 @@
 
 #define SIZE 1024
 
-{% for t in l_unique_output_type %}
-bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+{% if l_output %}
+bool almost_equal({{l_output[0]}} x, {{l_output[0]}} gold, {{l_output[0]}} tol) {
   return gold * (1-tol) <= x && x <= gold * (1 + tol);
 }
-{% endfor %}
+{% endif %}
 
 int main( int argc, char* argv[] )
 {
@@ -43,11 +43,32 @@ int main( int argc, char* argv[] )
     }
 
 {% if l_output %}
-   {{l_output[0]}}_cpu  = cblas_{{name_function}}(l_scalar_input[0][1], l_aggregate_input[0][1],
-   l_scalar_input[1][1], l_aggregate_input[1][1], l_scalar_input[2][1]);
+   {{l_output[1]}}_cpu  = cblas_{{name_function}}(
+    {{l_scalar_input[0][1]}},
+    {{l_aggregate_input[0][1]}},
+    {{l_scalar_input[1][1]}},
+    {{l_aggregate_input[1][1]}},
+    {{l_scalar_input[2][1]}});
+
+#pragma omp target data map(to:{{l_aggregate_input[0][1]}}[0:SIZE],{{l_aggregate_input[1][1]}}[0:SIZE])
+    {
+      #pragma omp target variant dispatch use_device_ptr({{l_aggregate_input[0][1]}}, {{l_aggregate_input[1][1]}}) 
+   {{l_output[1]}}_gpu  = cblas_{{name_function}}(
+    {{l_scalar_input[0][1]}},
+    {{l_aggregate_input[0][1]}},
+    {{l_scalar_input[1][1]}},
+    {{l_aggregate_input[1][1]}},
+    {{l_scalar_input[2][1]}});
+    }
+
+  if (!almost_equal({{l_output[1]}}_gpu, {{l_output[1]}}_cpu, 0.1)) {
+    std::cerr << "Expected: " << {{l_output[1]}}_cpu << " Got: " << {{l_output[1]}}_gpu << std::endl;
+    std::exit(112);
+  }
+
 {% else %}
-   cblas_{{name_function}}(l_scalar_input_[0], l_aggregate_input_[0],
-   l_scalar_input_[1], l_aggregate_input_[1], l_scalar_input_[2]);
+   cblas_{{name_function}}({{l_scalar_input_[0]}}, {{l_aggregate_input_[0]}},
+   {{l_scalar_input_[1]}}, {{l_aggregate_input_[1]}}, {{l_scalar_input_[2]}});
 {% endif %}
 
 
