@@ -18,6 +18,10 @@ blas1 = [
     ["ddot",
      [ "int", "double*", "int", "double*", "int","double"],
      [ "in", "in", "in", "in", "in", "out" ],
+     [ "n", "dx", "incx", "dy", "incy", "result"] ],
+    ["sdot",
+     [ "int", "float*", "int", "float*", "int","float"],
+     [ "in", "in", "in", "in", "in", "out" ],
      [ "n", "dx", "incx", "dy", "incy", "result"] ]
  ]
 
