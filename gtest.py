@@ -18,15 +18,19 @@ template = templateEnv.get_template(f"sdot2.cpp.jinja2")
 blas1 = [
     ["ddot",
      [ "int", "double*", "int", "double*", "int","double"],
-     [ "in", "in", "in", "in", "in", "out" ],
+     [ "in", "in", "in", "in", "in", "return" ],
      [ "n", "dx", "incx", "dy", "incy", "result"] ],
     ["dnrm2",
      [ "int", "double*", "int", "double"],
-     [ "in", "in", "in", "out" ],
+     [ "in", "in", "in", "return" ],
      [ "n", "x", "incx", "result"] ],
+    ["drotg",
+     [ "double*", "double*", "double*", "double*"],
+     [ "inout", "inout", "out", "out" ],
+     [ "da", "db", "c", "s"] ],
     ["sdot",
      [ "int", "float*", "int", "float*", "int","float"],
-     [ "in", "in", "in", "in", "in", "out" ],
+     [ "in", "in", "in", "in", "in", "return" ],
      [ "n", "dx", "incx", "dy", "incy", "result"] ]
  ]
 
@@ -45,13 +49,16 @@ for function in blas1:
     l_aggregate_input_ = []
     l_scalar_input_ = []
     l_input_output_ = []
+    l_return_ = []
     l_output_ = []
     l_types_names_ = []
     # look at argument types and intents
     for atype, intent, name  in zip(argument_types,argument_intents,argument_names) :
-        if intent != "out":
-            l_types_names_.append( [atype, name] )
-
+        if intent != "return":
+            if "*" in atype:
+                l_types_names_.append( [True, intent,atype[:len(atype)-1], name] )
+            else:
+                l_types_names_.append( [False, intent,atype, name] )
 
         if intent == "in":
             if "*" in atype:
@@ -61,33 +68,40 @@ for function in blas1:
             
         elif intent == "inout":
 # inout is probably always a pointer, at least in C
-            l_input_output_.append([atype, name ])
+            l_input_output_.append([atype[:len(atype)-1], name ])
         elif intent == "out":
-# sanity check on length of l_output_. it should only ever have one
+            l_output_.append([atype[:len(atype)-1], name ])
+        elif intent == "return":
+# sanity check on length of l_return_. it should only ever have one
 # output.
-            if len(l_output_) > 1:
+            if len(l_return_) > 1:
                 print("problem, too many outputs")
                 exit()
-            l_output_.append([atype, name ])
+            l_return_.append([atype, name ])
         else:
             print("problem!")
             exit()
-            
+
+    l_unique_type_ = set(t_ for pointer_,intent_,t_,name_ in l_types_names_ if intent_ == "out" or intent_ == "inout")
+    for t_,name_ in l_return_:
+        l_unique_type_.add(t_)
+
   #  debug all the inputs
     print(f'function_name: {function_name}')
     print(f'l_aggregate_input_ {l_aggregate_input_}')
     print(f'l_scalar_input_ {l_scalar_input_}')
     print(f'l_input_output_ {l_input_output_}')
-    print(f'l_output_ {l_output_}')
-
+    print(f'l_return_ {l_return_}')
+    print(f'l_unique_type_ {l_unique_type_}')
 
     str_ = template.render( name_function=function_name,
                             l_aggregate_input=l_aggregate_input_,
                             l_scalar_input=l_scalar_input_,
                             l_input_output=l_input_output_,
+                            l_return=l_return_,
                             l_output=l_output_,
                             l_types_names=l_types_names_,
-                            l_argument_names=argument_names, )
+                            l_unique_type=l_unique_type_ )
     with open(f"{function_name}.cpp", 'w') as f:
         f.write(str_)
 
