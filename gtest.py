@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import jinja2,os
+from collections import namedtuple
 
 #
 #  __                                      _          _
@@ -19,6 +20,10 @@ blas1 = [
      [ "int", "double*", "int", "double*", "int","double"],
      [ "in", "in", "in", "in", "in", "out" ],
      [ "n", "dx", "incx", "dy", "incy", "result"] ],
+    ["dnrm2",
+     [ "int", "double*", "int", "double"],
+     [ "in", "in", "in", "out" ],
+     [ "n", "x", "incx", "result"] ],
     ["sdot",
      [ "int", "float*", "int", "float*", "int","float"],
      [ "in", "in", "in", "in", "in", "out" ],
@@ -41,13 +46,19 @@ for function in blas1:
     l_scalar_input_ = []
     l_input_output_ = []
     l_output_ = []
+    l_types_names_ = []
     # look at argument types and intents
     for atype, intent, name  in zip(argument_types,argument_intents,argument_names) :
+        if intent != "out":
+            l_types_names_.append( [atype, name] )
+
+
         if intent == "in":
             if "*" in atype:
                 l_aggregate_input_.append([atype[:len(atype)-1], name ])
             else:
                 l_scalar_input_.append([atype, name ])
+            
         elif intent == "inout":
 # inout is probably always a pointer, at least in C
             l_input_output_.append([atype, name ])
@@ -62,11 +73,21 @@ for function in blas1:
             print("problem!")
             exit()
             
+  #  debug all the inputs
+    print(f'function_name: {function_name}')
+    print(f'l_aggregate_input_ {l_aggregate_input_}')
+    print(f'l_scalar_input_ {l_scalar_input_}')
+    print(f'l_input_output_ {l_input_output_}')
+    print(f'l_output_ {l_output_}')
+
+
     str_ = template.render( name_function=function_name,
                             l_aggregate_input=l_aggregate_input_,
                             l_scalar_input=l_scalar_input_,
                             l_input_output=l_input_output_,
-                            l_output=l_output_[0] )
+                            l_output=l_output_,
+                            l_types_names=l_types_names_,
+                            l_argument_names=argument_names, )
     with open(f"{function_name}.cpp", 'w') as f:
         f.write(str_)
 
