@@ -16,6 +16,16 @@ templateEnv = jinja2.Environment(loader=templateLoader)
 template = templateEnv.get_template(f"sdot2.cpp.jinja2")
 
 blas1 = [
+    ["dasum",
+     [ "int", "double*", "int", "double"],
+     [ "in", "in", "in", "return" ],
+     [ "n", "dx", "incx", "result"],
+     [ "1", "n", "1", "1"] ],
+    ["daxpy",
+     [ "int", "double", "double*", "int","double*", "int"],
+     [ "in", "in", "in", "in", "inout", "in"],
+     [ "n", "a", "x", "incx","y", "incy"],
+     [ "1", "1", "n", "1", "n", "1"] ],
     ["ddot",
      [ "int", "double*", "int", "double*", "int","double"],
      [ "in", "in", "in", "in", "in", "return" ],
