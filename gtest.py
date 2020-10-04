@@ -19,19 +19,23 @@ blas1 = [
     ["ddot",
      [ "int", "double*", "int", "double*", "int","double"],
      [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"] ],
+     [ "n", "dx", "incx", "dy", "incy", "result"],
+     [ "1", "n", "1", "n", "1", "1"] ],
     ["dnrm2",
      [ "int", "double*", "int", "double"],
      [ "in", "in", "in", "return" ],
-     [ "n", "x", "incx", "result"] ],
+     [ "n", "x", "incx", "result"],
+     [ "1", "n", "1", "1", "1"] ],
     ["drotg",
      [ "double*", "double*", "double*", "double*"],
      [ "inout", "inout", "out", "out" ],
-     [ "da", "db", "c", "s"] ],
+     [ "da", "db", "c", "s"],
+     [ "1","1", "1", "1"] ],
     ["sdot",
      [ "int", "float*", "int", "float*", "int","float"],
      [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"] ]
+     [ "n", "dx", "incx", "dy", "incy", "result"],
+     [ "1", "n", "1", "n", "1", "1"] ]
  ]
 
 for function in blas1:
@@ -39,7 +43,8 @@ for function in blas1:
     argument_types = function[1]
     argument_intents = function[2]
     argument_names = function[3]
-    print(f'{function_name}, {argument_types}, {argument_intents}')
+    argument_sizes = function[4]
+    print(f'{function_name}, {argument_types}, {argument_intents} {argument_sizes}')
 
     # sanity check
     if len(argument_types) != len(argument_intents) or len(argument_types) != len(argument_names) or len(argument_intents) != len(argument_names):
@@ -53,37 +58,37 @@ for function in blas1:
     l_output_ = []
     l_types_names_ = []
     # look at argument types and intents
-    for atype, intent, name  in zip(argument_types,argument_intents,argument_names) :
+    for atype, intent, name, size  in zip(argument_types,argument_intents,argument_names,argument_sizes) :
         if intent != "return":
             if "*" in atype:
-                l_types_names_.append( [True, intent,atype[:len(atype)-1], name] )
+                l_types_names_.append( [size,True, intent,atype[:len(atype)-1], name] )
             else:
-                l_types_names_.append( [False, intent,atype, name] )
+                l_types_names_.append( [size,False, intent,atype, name] )
 
         if intent == "in":
             if "*" in atype:
-                l_aggregate_input_.append([atype[:len(atype)-1], name ])
+                l_aggregate_input_.append([size,atype[:len(atype)-1], name ])
             else:
-                l_scalar_input_.append([atype, name ])
+                l_scalar_input_.append([size,atype, name ])
             
-        elif intent == "inout":
+        elif intent == "inout" or intent == "out":
 # inout is probably always a pointer, at least in C
-            l_input_output_.append([atype[:len(atype)-1], name ])
+            l_input_output_.append([size,atype[:len(atype)-1], name ])
         elif intent == "out":
-            l_output_.append([atype[:len(atype)-1], name ])
+            l_output_.append([size,atype[:len(atype)-1], name ])
         elif intent == "return":
 # sanity check on length of l_return_. it should only ever have one
 # output.
             if len(l_return_) > 1:
                 print("problem, too many outputs")
                 exit()
-            l_return_.append([atype, name ])
+            l_return_.append([size,atype, name ])
         else:
             print("problem!")
             exit()
 
-    l_unique_type_ = set(t_ for pointer_,intent_,t_,name_ in l_types_names_ if intent_ == "out" or intent_ == "inout")
-    for t_,name_ in l_return_:
+    l_unique_type_ = set(t_ for size_,pointer_,intent_,t_,name_ in l_types_names_ if intent_ == "out" or intent_ == "inout")
+    for size_,t_,name_ in l_return_:
         l_unique_type_.add(t_)
 
   #  debug all the inputs
