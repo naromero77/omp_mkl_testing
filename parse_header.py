@@ -63,10 +63,11 @@ if __name__ == '__main__':
     d=hclean(mklh)
     #types = set(i.split()[0] for i in d)
     for i,l in enumerate(d):
-        print(i)
-        print(l)
+        print(f"\n{i}:\n{l}\n")
         n,t,v = fparse(l)
+        # uncomment to transpose args
         #v = list(zip(*v))
         print(n)
         print(t)
-        print(v)
+        for j in v:
+            print(j)
