@@ -2,24 +2,9 @@
 
 import re,os
 
-def comment_remover(text):
+def clean(text):
     '''
-    https://stackoverflow.com/a/241506
-    '''
-    def replacer(match):
-        s = match.group(0)
-        if s.startswith('/'):
-            return " " # note: a space and not an empty string
-        else:
-            return s
-    pattern = re.compile(
-        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-        re.DOTALL | re.MULTILINE
-    )
-    return re.sub(pattern, replacer, text)
-
-def hash_remover(text):
-    '''
+    remove comment, #, and blank lines
     https://stackoverflow.com/a/241506
     '''
     def replacer(match):
@@ -34,46 +19,26 @@ def hash_remover(text):
     )
     return re.sub(r'\n\s*\n', '\n', re.sub(pattern, replacer, text),flags=re.MULTILINE)
 
-def matchall(fstr):
-    #m=re.finditer(r"(\w+)\s*(\w+)\s*\(([^;]+)\)\s*([^;]*);",fstr,re.MULTILINE)
-    #m=re.finditer(r"^(\w+)\s+(\w+)\s*\((.*?)\)",fstr,re.MULTILINE | re.DOTALL)
-    #m=re.finditer(r"\b^(?!#)([\s\w]+?)\s+(\w+)\s?\((.*?)\)",fstr,re.MULTILINE | re.DOTALL)
-    #m=re.finditer(r"^(.+?)\s(\w+)\s?\((.*?)\)",fstr,re.MULTILINE | re.DOTALL)
+def get_decls(fstr):
+    '''
+    match all function declarations
+    '''
     m=re.finditer(r"^([\w\s]+)\s(\w+)\s?\((.*?)\)",fstr,re.MULTILINE | re.DOTALL)
     return m
+
 def hclean(fpath):
     '''
     read and clean up header file
-    return list of strings (each string is a function signature)
-
-    assumes any function declaration spanning multiple lines has a comma
-      (and possibly whitespace) at the end of each broken line
     '''
     with open(fpath,'r') as f:
-        d0=f.read()
+        t=f.read()
+    return clean(t)
 
-    #put signature on one line (assume multiline signature has comma at end of each broken line)
-    d0=re.sub(',\s+',',',d0)
-
-    #clean up extra spaces
-    #d0=re.sub(' +',' ',d0)
-
-    # split on newline
-    # remove blank lines
-    # remove lines beginning with #
-    d0=list(filter(lambda x:x[0]!="#",filter(None,d0.split('\n'))))
-
-    # only keep lines that end with ';'
-    d0=list(filter(lambda x:x[-1]==';',d0))
-    return d0
-
-# 
-# use r"(\w+)\s*(\w+)\s*\(([^;]+)\)\s*([^;]*);" to match multiline declaration (if hclean doesn't work)
-# 
 
 def fparse(m):
     '''
     TODO: fix for types with spaces (e.g. "long int", "unsigned int", etc.)
+    TODO: value->in, const->in, ref(no const)->inout, result->return
     parse string containing function signature
     returns:
     [ function_name,
@@ -101,8 +66,8 @@ def fparse(m):
         vartype = vartype + npt*'*'
         argvars.append([vartype,isconst,varname])
     # depending on what is needed, can append the result to the variable list for non-void
-    #if rtype.lower()!="void":
-    #    argvars.append([rtype,False,'RESULT'])
+    if rtype.lower()!="void":
+        argvars.append([rtype,False,'RESULT'])
 
     return (fname,rtype,argvars)
 
@@ -111,10 +76,10 @@ if __name__ == '__main__':
     #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas_omp_offload.h')
     #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_cblas.h')
     mklh='../mkl_cblas.h'
-    with open(mklh,'r') as f:
-        mklstr = f.read()
+    mklstr = hclean(mklh)
 
-    m=matchall(hash_remover(mklstr))
+    m=get_decls(mklstr)
+
     for i,mi in enumerate(m):
         print(f"\n{i}:\n{mi.group(0)}\n")
         n,t,v = fparse(mi)
