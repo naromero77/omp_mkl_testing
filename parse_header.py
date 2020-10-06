@@ -64,28 +64,40 @@ def fparse(m):
         npt = varname.count('*')
         varname = varname[npt:]
         vartype = vartype + npt*'*'
-        argvars.append([vartype,isconst,varname])
+        varinout = "in" if (isconst or (npt==0)) else "inout"
+        argvars.append([vartype,varinout,varname])
     # depending on what is needed, can append the result to the variable list for non-void
     if rtype.lower()!="void":
-        argvars.append([rtype,False,'RESULT'])
+        argvars.append([rtype,"return","result"])
 
     return (fname,rtype,argvars)
 
 if __name__ == '__main__':
+    import json
     #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas.h')
-    #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas_omp_offload.h')
+    mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas_omp_offload.h')
     #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_cblas.h')
-    mklh='../mkl_cblas.h'
+    #mklh='../mkl_cblas.h'
     mklstr = hclean(mklh)
 
     m=get_decls(mklstr)
+    
+    jsondir = "data"
+    try:
+        os.mkdir(jsondir)
+    except OSError as error:
+        pass
 
     for i,mi in enumerate(m):
-        print(f"\n{i}:\n{mi.group(0)}\n")
         n,t,v = fparse(mi)
-        print(n)
-        print(t)
-        # uncomment to transpose args
-        #v = list(zip(*v))
-        for j in v:
-            print(j)
+        v = list(zip(*v))
+        #print(f"\n{i}:\n{mi.group(0)}\n")
+        #print(n)
+        #print(t)
+        #for j in v:
+        #    print(j)
+        #print([n,[list(i) for i in v]])
+        with open(os.path.join(jsondir,n),'w') as f:
+            json.dump([n,[list(i) for i in v]],f)
+
+
