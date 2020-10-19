@@ -98,6 +98,6 @@ if __name__ == '__main__':
         #    print(j)
         #print([n,[list(i) for i in v]])
         with open(os.path.join(jsondir,n),'w') as f:
-            json.dump([n,[list(i) for i in v]],f)
+            json.dump([n]+[list(i) for i in v],f)
 
 
