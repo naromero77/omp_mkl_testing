@@ -12,23 +12,24 @@ bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
 int main( int argc, char* argv[] )
 {
 
+// assign values to the scalar inputs
 {%- for size,t,name in l_scalar_input %}
   {{t}} {{name}} = 1;
 {%- endfor %}
 
 
+// allocate space for the arrays
 {%- for size,pointer, intent,t,name in l_types_names if pointer %}
-      {%- if intent == "out" or intent == "inout" %}
-	   {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
-	   {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
-        for(int i=0;i<{{size}};i++)	{
-	      {{name}}_gpu[i] = 1;
-      	      {{name}}_cpu[i] = 1;
-	}
-       {%- else %}
-	   {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*{{size}});
-       {%- endif %}
-
+  {%- if intent == "out" or intent == "inout" %}
+  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+  for(int i=0;i<{{size}};i++)	{
+	{{name}}_gpu[i] = 1;
+      	{{name}}_cpu[i] = 1;
+   }
+   {%- else %}
+   {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+   {%- endif %}
 {%- endfor %}
 
 {%- if l_return %}
@@ -36,24 +37,22 @@ int main( int argc, char* argv[] )
   {{l_return[0][1]}} {{l_return[0][2]}}_gpu = 0;
 {%- endif %}
 
-
-{%- for size,pointer, intent,t,name in l_types_names  %}
+// assign values to allocatable inputs
+{%- for size,pointer, intent,t,name in l_types_names if pointer  %}
       {%- if intent == "in"  %}
         for(int i=0;i<{{size}};i++)
     {
-{%- for size,t,name in l_aggregate_input %}
       {{name}}[i] = 1;
-{%- endfor %}
     }
        {%- endif %}
 
 {%- endfor %}
 
-
+// call CPU version
 {%- if l_return %}
 {{l_return[0][2]}}_cpu = \
 {%- endif %}
-   cblas_{{name_function}} (
+   {{name_function}} (
 {%- for size,pointer,intent,t,name in l_types_names %}
     {%- if loop.last %}
        {%- if intent == "out" or intent == "inout" %}
@@ -71,6 +70,7 @@ int main( int argc, char* argv[] )
 {%- endfor %}
           );
 
+// call GPU version
 #pragma omp target data \
 {%- for size,t,name in l_aggregate_input %}
    {%- if loop.first %}
@@ -165,7 +165,7 @@ int main( int argc, char* argv[] )
 
 {%- endif %}
 
-
+// check answer
 {%- for size,pointer,intent,t,name in l_types_names %}
        {%- if intent == "out" or intent == "inout" %}
 

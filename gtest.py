@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import jinja2,os
+import jinja2,os,json
 from collections import namedtuple
 
 #
@@ -14,41 +14,74 @@ templateEnv = jinja2.Environment(loader=templateLoader)
 
 
 template = templateEnv.get_template(f"sdot2.cpp.jinja2")
+functions = []
+# read in the json from the header parser
+# Set the directory you want to start from
+rootDir = 'data'
+for dirName, subdirList, fileList in os.walk(rootDir):
+    for fname in fileList:
+#        print('\t%s' % fname)
+        with open(rootDir+"/"+fname) as f:
+            functions.append(json.load(f))
+        
+        
+#print(functions)
+
+#['dasum', [['MKL_INT*', 'double*', 'MKL_INT*', 'double'], ['in', 'in', 'in', 'return'], ['n', 'x', 'incx', 'result']]]
 
 blas1 = [
-    ["dasum",
+    ["cblas_dasum",
      [ "int", "double*", "int", "double"],
      [ "in", "in", "in", "return" ],
      [ "n", "dx", "incx", "result"],
      [ "1", "n", "1", "1"] ],
-    ["daxpy",
+    ["cblas_daxpy",
      [ "int", "double", "double*", "int","double*", "int"],
      [ "in", "in", "in", "in", "inout", "in"],
      [ "n", "a", "x", "incx","y", "incy"],
      [ "1", "1", "n", "1", "n", "1"] ],
-    ["ddot",
+    ["cblas_ddot",
      [ "int", "double*", "int", "double*", "int","double"],
      [ "in", "in", "in", "in", "in", "return" ],
      [ "n", "dx", "incx", "dy", "incy", "result"],
      [ "1", "n", "1", "n", "1", "1"] ],
-    ["dnrm2",
+    ["cblas_dnrm2",
      [ "int", "double*", "int", "double"],
      [ "in", "in", "in", "return" ],
      [ "n", "x", "incx", "result"],
      [ "1", "n", "1", "1", "1"] ],
-    ["drotg",
+    ["cblas_drotg",
      [ "double*", "double*", "double*", "double*"],
      [ "inout", "inout", "out", "out" ],
      [ "da", "db", "c", "s"],
      [ "1","1", "1", "1"] ],
-    ["sdot",
+    ["cblas_sdot",
      [ "int", "float*", "int", "float*", "int","float"],
      [ "in", "in", "in", "in", "in", "return" ],
      [ "n", "dx", "incx", "dy", "incy", "result"],
      [ "1", "n", "1", "n", "1", "1"] ]
  ]
 
-for function in blas1:
+blas2 = [
+    ["cblas_dgemv",
+     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
+     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
+     ["Layout", "TransA", "M", "N", "alpha", "A", "lda", "X", "incX", "beta", "Y", "incY"],
+     ["1", "1", "1", "1", "1", "max(N,M)*max(N,M)", "1", "(1+(max(N,M)-1)*abs(incX))", "1", "1", "(1+(max(N,M)-1)*abs(incY))", "1"]
+    ]
+]
+
+blas3 = [
+    ["cblas_dgemm",
+     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
+     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
+     ["Layout", "TransA", "TransB", "M", "N", "K", "alpha", "A", "lda", "B", "ldb", "beta", "C", "ldc"],
+     ["1", "1", "1", "1", "1", "1", "1", "max(M,K)*max(M,K)", "1", "max(N,K)*max(N,K)", "1", "1", "max(N,M)*max(N,M)", "1"]
+    ]
+]
+
+
+for function in blas3:
     function_name = function[0]
     argument_types = function[1]
     argument_intents = function[2]
@@ -98,6 +131,7 @@ for function in blas1:
             exit()
 
     l_unique_type_ = set(t_ for size_,pointer_,intent_,t_,name_ in l_types_names_ if intent_ == "out" or intent_ == "inout")
+    
     for size_,t_,name_ in l_return_:
         l_unique_type_.add(t_)
 
@@ -120,37 +154,4 @@ for function in blas1:
     with open(f"{function_name}.cpp", 'w') as f:
         f.write(str_)
 
-    
 
-
-# for name_,input_t_,both_input_output_variables,return_scalar_variable in [["ddot", "double", False,True], ["sdot", "float",False,True] ]:
-# # variables that are pure inputs
-#     l_input_=[[input_t_,"x"],[input_t_,"y"]]
-# # variables that are both inputs and outputs
-#     if both_input_output_variables:
-#         l_input_inout_=[[input_t_,"z"]]
-#     else:
-#         l_input_inout_=[]
-# # variables that are pure outputs
-#     if return_scalar_variable:
-#         return_output_=[input_t_,"result"]
-#     else:
-#         return_output_= None
-
-#     l_aggregate_output_=[[input_t_,"x"],[input_t_,"y"]]
-# #    l_aggregate_output_=[]
-
-#     if return_output_:
-#         l_unique_output_type_ = set(t_ for t_,name_ in l_aggregate_output_+[return_output_])
-#     else:
-#         l_unique_output_type_ = set(t_ for t_,name_ in l_aggregate_output_)
-
-#     str_ = template.render( name_function=name_,
-#                             t=input_t_,
-#                             l_input=l_input_,
-#                             l_input_inout=l_input_inout_,
-#                             return_output=return_output_,
-#                             l_aggregate_output=l_aggregate_output_,
-#                             l_unique_output_type=l_unique_output_type_ )
-#     with open(f"{name_}_{input_t_}.cpp", 'w') as f:
-#         f.write(str_)
