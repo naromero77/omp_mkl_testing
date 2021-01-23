@@ -1,0 +1,190 @@
+#include <iostream>
+#include "mkl.h"
+#include "mkl_omp_offload.h"
+
+{%- for t in l_unique_type %}
+bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+  return gold * (1-tol) <= x && x <= gold * (1 + tol);
+}
+{%- endfor %}
+
+int main( int argc, char* argv[] )
+{
+
+// assign values to the scalar inputs
+{%- for size,t,name in l_scalar_input %}
+  {{t}} {{name}} = {{size}};
+{%- endfor %}
+
+
+// allocate space for the arrays
+{%- for size,pointer, intent,t,name in l_types_names if pointer %}
+  {%- if intent == "out" or intent == "inout" %}
+  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+  for(int i=0;i<{{size}};i++)	{
+	{{name}}_gpu[i] = 1.0/i;
+      	{{name}}_cpu[i] = 1.0/i;
+   }
+   {%- else %}
+   {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+   {%- endif %}
+{%- endfor %}
+
+{%- if l_return %}
+  {{l_return[0][1]}} {{l_return[0][2]}}_cpu = 0;
+  {{l_return[0][1]}} {{l_return[0][2]}}_gpu = 0;
+{%- endif %}
+
+// assign values to allocatable inputs
+{%- for size,pointer, intent,t,name in l_types_names if pointer  %}
+      {%- if intent == "in"  %}
+        for(int i=0;i<{{size}};i++)
+    {
+      {{name}}[i] = 1;
+    }
+       {%- endif %}
+
+{%- endfor %}
+
+// call CPU version
+{%- if l_return %}
+{{l_return[0][2]}}_cpu = \
+{%- endif %}
+   {{name_function}} (
+{%- for size,pointer,intent,t,name in l_types_names %}
+    {%- if loop.last %}
+       {%- if intent == "out" or intent == "inout" %}
+          {{name}}_cpu
+       {%- else %}
+          {{name}}
+       {%- endif %}
+    {%- else %}
+       {%- if intent == "out" or intent == "inout" %}
+          {{name}}_cpu,
+       {%- else %}
+          {{name}},
+       {%- endif %}
+    {%- endif %}
+{%- endfor %}
+          );
+
+// call GPU version
+#pragma omp target data \
+{%- for size,t,name in l_aggregate_input %}
+   {%- if loop.first %}
+   map(to: {{name}}[0:{{size}}]\
+   {%- elif loop.last %}
+   , {{name}}[0:{{size}}] \
+   {%- else %}
+   , {{name}}[0:{{size}}]\
+   {%- endif %}
+{%- endfor %}
+{%- if l_aggregate_input %}
+    {%- if l_input_output %}
+    ) \
+    {%- else %}
+    )
+    {%- endif %}
+{%- endif %}
+
+{%- for size,t,name in l_input_output %}
+   {%- if loop.first %}
+   map(tofrom: {{name}}_gpu[0:{{size}}]\
+   {%- elif loop.last %}
+   , {{name}}_gpu[0:{{size}}] \
+   {%- else %}
+   , {{name}}_gpu[0:{{size}}]\
+   {%- endif %}
+{%- endfor %}
+{%- if l_input_output %}
+    )
+{%- endif %}
+
+    {
+      #pragma omp target variant dispatch use_device_ptr( \
+{%- for size,t,name in l_aggregate_input %}
+   {%- if loop.last %}
+   {{name}} \
+   {%- else %}
+   {{name}}, \
+   {%- endif %}
+{%- endfor %}
+{%- if l_aggregate_input %}
+    {%- if l_input_output %}
+    , \
+    {%- else %}
+    )
+    {%- endif %}
+{%- endif %}
+
+{%- for size,t,name in l_input_output %}
+   {%- if loop.first %}
+   {{name}}_gpu \
+   {%- elif loop.last %}
+   , {{name}}_gpu \
+   {%- else %}
+   , {{name}}_gpu \
+   {%- endif %}
+{%- endfor %}
+{%- if l_input_output %}
+    )
+{%- endif %}
+
+
+{%- if l_return %}
+{{l_return[0][2]}}_gpu = \
+{%- endif %}
+   {{name_function}} (
+{%- for size,pointer,intent,t,name in l_types_names %}
+    {%- if loop.last %}
+       {%- if intent == "out" or intent == "inout" %}
+          {{name}}_gpu
+       {%- else %}
+          {{name}}
+       {%- endif %}
+    {%- else %}
+       {%- if intent == "out" or intent == "inout" %}
+          {{name}}_gpu,
+       {%- else %}
+          {{name}},
+       {%- endif %}
+    {%- endif %}
+{%- endfor %}
+          );
+}
+
+
+{%- if l_return %}
+
+  if (!almost_equal({{l_return[0][2]}}_gpu, {{l_return[0][2]}}_cpu, 0.1)) {
+    std::cerr << "Expected: " << {{l_return[0][2]}}_cpu << " Got: " << {{l_return[0][2]}}_gpu << std::endl;
+    std::exit(112);
+  }
+
+{%- endif %}
+
+// check answer
+{%- for size,pointer,intent,t,name in l_types_names %}
+       {%- if intent == "out" or intent == "inout" %}
+
+         {%- if pointer %}
+	   for(int i=0;i<{{size}};i++) {
+             if (!almost_equal({{name}}_gpu[i], {{name}}_cpu[i], 0.1)) {
+      	       std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
+	       std::exit(112);
+             }       
+           }
+        {%- else %}
+             if (!almost_equal({{name}}_gpu, {{name}}_cpu, 0.1)) {
+      	       std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
+	       std::exit(112);
+             }       
+        {%- endif %}
+
+        {%- endif %}
+{%- endfor %}
+
+
+  return 0;
+}
