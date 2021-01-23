@@ -62,14 +62,11 @@ def varvalues(varname, vartype):
     LDA = dimM
     LDB = dimK
     LDC = dimN
-    matA = 'A'
-    matB = 'B'
-    matC = 'C'
-    vecX = 'X'
-    vecY = 'Y'
-    Trans = 'N'
-    TransA = 'N'
-    TransB = 'N'
+    matA = dimM*dimK
+    matB = dimK*dimM
+    matC = dimM*dimN
+    vecX = dimX
+    vecY = dimY
     # rotations
     rotCos = math.cos(rotAngle)
     rotSin = math.sin(rotAngle)
