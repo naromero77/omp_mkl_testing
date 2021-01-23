@@ -42,6 +42,7 @@ def varvalues(varname, vartype):
     Inputs is the variable name from the header file as obtain by fparse function.
     '''
 
+    FortranAPI = False # controls some operations, e.g. transpose, uplo,
     # some scalar values that can be reused, we intentionaly pick 45 degrees because
     # sin(45) = cos(45)
     rotAngle = math.radians(45)
@@ -73,10 +74,22 @@ def varvalues(varname, vartype):
     rotCos = math.cos(rotAngle)
     rotSin = math.sin(rotAngle)
     # strings that control operations
-    Uplo = 'U'
-    Side = 'L'
-    Diag = 'U'
-    Layout = 'CblasRowMajor'
+    # FortranAPI
+    if FortranAPI:
+        Trans = 'N'
+        TransA = 'N'
+        TransB = 'N'
+        Uplo = 'U'
+        Side = 'L'
+        Diag = 'U'
+    else: # CblasAPI
+        Trans = 'CblasNoTrans'
+        TransA = 'CblasNoTrans'
+        TransB = 'CblasNoTrans'
+        Uplo = 'CblasUpper'
+        Side = 'CblasLeft'
+        Diag = 'CblasUpper'
+        Layout = 'CblasRowMajor' # only exist for Cblas API
     result = 1
 
     # Coverage for batch and batch_strided interfaces are needed here
