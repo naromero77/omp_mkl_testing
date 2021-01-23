@@ -122,6 +122,14 @@ for function in blas3:
             if "*" in atype:
                 l_aggregate_input_.append([size,atype[:len(atype)-1], name ])
             else:
+                # check if size is a single char and add single quotes
+                # for handling the FortranAPI
+                try:
+                    size.isalpha()
+                    if len(size) == 1:
+                        size = '\'' + size + '\''
+                except AttributeError:
+                    pass
                 l_scalar_input_.append([size,atype, name ])
             
         elif intent == "inout" or intent == "out":
