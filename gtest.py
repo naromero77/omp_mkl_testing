@@ -82,7 +82,7 @@ blas3 = [
 # '.' is equivalent to '?' wildcard
 gemm_match = 'cblas_.gemm'
 
-for function in blas3:
+for function in functions:
     function_name = function[0]
 
     # This bit of code will be removed in the future, but for now its just for testing certain functions
