@@ -14,7 +14,7 @@ templateLoader = jinja2.FileSystemLoader(searchpath=os.path.join(dirname, "templ
 templateEnv = jinja2.Environment(loader=templateLoader)
 
 
-template = templateEnv.get_template(f"sdot2.cpp.jinja2")
+template = templateEnv.get_template(f"gemm.cpp.jinja2")
 functions = []
 # read in the json from the header parser
 # Set the directory you want to start from
