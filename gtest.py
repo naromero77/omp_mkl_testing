@@ -25,9 +25,6 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         with open(rootDir+"/"+fname) as f:
             functions.append(json.load(f))
         
-        
-#print(functions)
-
 #['dasum', [['MKL_INT*', 'double*', 'MKL_INT*', 'double'], ['in', 'in', 'in', 'return'], ['n', 'x', 'incx', 'result']]]
 
 blas1 = [
@@ -100,6 +97,7 @@ for function in blas3:
     argument_names = function[3]
     argument_sizes = function[4]
     print(f'{function_name}, {argument_types}, {argument_intents} {argument_sizes}')
+    print('argument_sizes = ', argument_sizes)
 
     # sanity check
     if len(argument_types) != len(argument_intents) or len(argument_types) != len(argument_names) or len(argument_intents) != len(argument_names):
@@ -153,6 +151,8 @@ for function in blas3:
     print(f'l_scalar_input_ {l_scalar_input_}')
     print(f'l_input_output_ {l_input_output_}')
     print(f'l_return_ {l_return_}')
+    print(f'l_output_ {l_output_}')
+    print(f'l_type_names_ {l_types_names_}')
     print(f'l_unique_type_ {l_unique_type_}')
 
     str_ = template.render( name_function=function_name,
