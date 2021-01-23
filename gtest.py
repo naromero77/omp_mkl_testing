@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import jinja2,os,json
+import re
 from collections import namedtuple
 
 #
@@ -80,9 +81,20 @@ blas3 = [
     ]
 ]
 
+# Supported functions
+# '.' is equivalent to '?' wildcard
+gemm_match = 'cblas_.gemm'
 
 for function in blas3:
     function_name = function[0]
+
+    # This bit of code will be removed in the future, but for now its just for testing certain functions
+    found_gemm = re.search(r'\b' + gemm_match + r'\b',function_name)
+    if found_gemm:
+        pass
+    else:
+        continue
+
     argument_types = function[1]
     argument_intents = function[2]
     argument_names = function[3]
