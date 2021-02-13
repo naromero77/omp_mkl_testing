@@ -155,7 +155,7 @@ def varvalues(varname, vartype):
 
     # create some shorthand groups
     realScalarTypes = ['double', 'float']
-    complexScalarTypes = ['void*', 'MKL_Complex16*']
+    complexScalarTypes = ['MKL_Complex8*', 'MKL_Complex16*']
     pointerTypes = ['double*', 'float*']
     pointerPointerTypes = ['double**', 'float**']
 
@@ -217,6 +217,14 @@ def fparse(m):
         vartype = larg.pop()
         npt = varname.count('*')
         varname = varname[npt:]
+        # headers use void for both single and double-precision complex
+        # make distinction here based on the function name, we check
+        # the first character and the seventh character
+        if vartype == "void":
+            if (fname[0] == "c" or fname[7] == "c"):
+                vartype="MKL_Complex8"
+            if (fname[0] == "c" or fname[7] == "z"):
+                vartype="MKL_Complex16"
         vartype = vartype + npt*'*'
         varinout = "in" if (isconst or (npt==0)) else "inout"
         varvalue = varvalues(varname, vartype)
