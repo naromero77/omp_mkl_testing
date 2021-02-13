@@ -4,7 +4,7 @@ ifdef TIMEOUT
 	TIMEOUT = timeout -k 5s $(OVO_TIMEOUT)
 endif
 
-MATH_LIB_FLAGS=-mkl -fsycl -lmkl_sycl
+MATH_LIB_FLAGS=-qmkl -fsycl -lmkl_sycl
 
 SRC = $(wildcard *.cpp)
 .PHONY: exe
