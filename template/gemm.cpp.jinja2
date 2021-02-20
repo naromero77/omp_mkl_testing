@@ -24,8 +24,8 @@ int main( int argc, char* argv[] )
 // allocate space for the arrays
 {%- for size,pointer, intent,t,name in l_types_names if pointer %}
   {%- if intent == "out" or intent == "inout" %}
-  {{t}} *{{name}}_cpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
-  {{t}} *{{name}}_gpu = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+  {{t}} *{{name}}_cpu = ({{t}} *)mkl_malloc( {{size}}*sizeof({{t}}), 64);
+  {{t}} *{{name}}_gpu = ({{t}} *)mkl_malloc( {{size}}*sizeof({{t}}), 64);
   for(int i=0;i<{{size}};i++)	{
         {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
         {{name}}_gpu[i].real = 1.0/(i+0.1);
@@ -38,7 +38,7 @@ int main( int argc, char* argv[] )
         {%- endif %}
    }
    {%- else %}
-   {{t}} *{{name}} = ({{t}} *)malloc( sizeof({{t}})*{{size}});
+   {{t}} *{{name}} = ({{t}} *)mkl_malloc( {{size}}*sizeof({{t}}), 64);
    {%- endif %}
 {%- endfor %}
 
