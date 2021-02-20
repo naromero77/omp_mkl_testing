@@ -237,9 +237,15 @@ def fparse(m):
 
 if __name__ == '__main__':
     import json
-    #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas.h')
-    mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_blas_omp_offload.h')
-    #mklh=os.path.join(os.environ['MKLROOT'],'include','mkl_cblas.h')
+    try:
+        MKLROOT = os.environ['MKLROOT']
+    except KeyError:
+        print("MKLROOT variable not set. Trying loading the oneAPI SDL")
+        raise
+
+    #mklh=os.path.join(MKLROOT,'include','mkl_blas.h')
+    mklh=os.path.join(MKLROOT,'include','mkl_blas_omp_offload.h')
+    #mklh=os.path.join(MKLROOT,'include','mkl_cblas.h')
     #mklh='../mkl_cblas.h'
     mklstr = hclean(mklh)
 
