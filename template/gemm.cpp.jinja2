@@ -18,7 +18,13 @@ int main( int argc, char* argv[] )
 
 // assign values to the scalar inputs
 {%- for size,t,name in l_scalar_input %}
+  {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
+  {{t}} {{name}};
+  {{name}}.real = {{size}};
+  {{name}}.imag = {{size}};
+  {%- else %}
   {{t}} {{name}} = {{size}};
+  {%- endif %}
 {%- endfor %}
 
 // allocate space for the arrays
@@ -79,7 +85,11 @@ int main( int argc, char* argv[] )
        {%- if intent == "out" or intent == "inout" %}
           {{name}}_cpu,
        {%- else %}
-          {{name}},
+           {%- if not pointer and (t == "MKL_Complex8" or t == "MKL_Complex16") %}
+           &{{name}},
+           {%- else %}
+           {{name}},
+           {%- endif %}
        {%- endif %}
     {%- endif %}
 {%- endfor %}
@@ -163,7 +173,11 @@ int main( int argc, char* argv[] )
        {%- if intent == "out" or intent == "inout" %}
           {{name}}_gpu,
        {%- else %}
-          {{name}},
+       	   {%- if not pointer and (t == "MKL_Complex8" or t == "MKL_Complex16") %}
+           &{{name}},
+           {%- else %}
+           {{name}},
+	   {%- endif %}
        {%- endif %}
     {%- endif %}
 {%- endfor %}
