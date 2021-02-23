@@ -62,10 +62,10 @@ int main( int argc, char* argv[] )
         for(int i=0;i<{{size}};i++)
     {
    {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-      {{name}}[i].real = 1;
-      {{name}}[i].imag = 1;
+      {{name}}[i].real = 1.0/(i+0.1);
+      {{name}}[i].imag = 1.0/(i+0.1);
    {%- else %}
-      {{name}}[i] = 1;
+      {{name}}[i] = 1.0/(i+0.1);
    {%- endif %}
     }
        {%- endif %}
@@ -206,23 +206,34 @@ int main( int argc, char* argv[] )
        {{t}} tol;
 
        {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-       tol.real = 0.1;
-       tol.imag = 0.1;
+       tol.real = 0.15;
+       tol.imag = 0.15;
        {%- else %}
        tol = 0.1;
        {%- endif %}
 
          {%- if pointer %}
 	   for(int i=0;i<{{size}};i++) {
-             if (!almost_equal({{name}}_gpu[i], {{name}}_cpu[i], tol)) {
-      	       std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
-	       std::exit(112);
+             if (not(almost_equal({{name}}_gpu[i], {{name}}_cpu[i], tol))) {
+	     std::cerr << "i: " << i << std::endl;
+	     {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
+	     std::cerr << "Expected: " << {{name}}_cpu[i].imag << " Got: " << {{name}}_gpu[i].imag << std::endl;
+	     std::cerr << "Expected: " << {{name}}_cpu[i].real << " Got: " << {{name}}_gpu[i].real << std::endl;
+	     {%- else %}
+      	     std::cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << std::endl;
+	     {%- endif %}
+	     std::exit(112);
              }       
            }
         {%- else %}
-             if (!almost_equal({{name}}_gpu, {{name}}_cpu, tol)) {
-      	       std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
-	       std::exit(112);
+             if (not(almost_equal({{name}}_gpu, {{name}}_cpu, tol))) {
+             {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
+             std::cerr << "Expected: " << {{name}}_cpu.imag << " Got: " << {{name}}_gpu.imag << std::endl;
+             std::cerr << "Expected: " << {{name}}_cpu.real << " Got: " << {{name}}_gpu.real << std::endl;
+             {%- else %}
+             std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
+	     {%- endif %}
+             std::exit(112);
              }       
         {%- endif %}
 
