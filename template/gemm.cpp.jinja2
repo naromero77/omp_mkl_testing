@@ -229,6 +229,15 @@ int main( int argc, char* argv[] )
         {%- endif %}
 {%- endfor %}
 
+// free space for the arrays
+{%- for size,pointer, intent,t,name in l_types_names if pointer %}
+  {%- if intent == "out" or intent == "inout" %}
+  mkl_free({{name}}_cpu);
+  mkl_free({{name}}_gpu);
+  {%- else %}
+  mkl_free({{name}});
+  {%- endif %}
+{%- endfor %}
 
   return 0;
 }
