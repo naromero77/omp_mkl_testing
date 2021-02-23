@@ -1,15 +1,18 @@
 #include <iostream>
+#include <cmath>
 #include "mkl.h"
 #include "mkl_omp_offload.h"
 
 {%- for t in l_unique_type %}
 bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+  bool close_enough = false;
   {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-  return gold.real * (1-tol.real) <= x.real && x.real <= gold.real * (1 + tol.real)
-   && gold.imag * (1-tol.imag) <= x.imag && x.imag <= gold.imag * (1 + tol.imag);
+  close_enough = (std::abs((gold.real-x.real)/gold.real) <= tol.real) && (std::abs((gold.imag-x.imag)/gold.imag) <= tol.real);
   {%- else %}
-  return gold * (1-tol) <= x && x <= gold * (1 + tol);
+  close_enough = (std::abs((gold - x)/gold) <= tol);
   {%- endif %}
+
+  return close_enough;
 }
 {%- endfor %}
 
