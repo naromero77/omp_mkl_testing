@@ -80,14 +80,14 @@ def varvalues(varname, vartype):
         TransB = 'N'
         Uplo = 'U'
         Side = 'L'
-        Diag = 'U'
+        Diag = 'U' # need to be fixed
     else: # CblasAPI
         Trans = 'CblasNoTrans'
         TransA = 'CblasNoTrans'
         TransB = 'CblasNoTrans'
         Uplo = 'CblasUpper'
         Side = 'CblasLeft'
-        Diag = 'CblasUpper'
+        Diag = 'CblasNonUnit'
         Layout = 'CblasRowMajor' # only exist for Cblas API
     result = 1
 
