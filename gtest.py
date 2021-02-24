@@ -27,14 +27,19 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         
 # Supported functions
 # '.' is equivalent to '?' wildcard
-gemm_match = 'cblas_.gemm'
+# blas_match = 'cblas_.gemm'
+blas_match = 'cblas_.....'
+rot_match = 'cblas_.rot.'
 
 for function in functions:
     function_name = function[0]
 
     # This bit of code will be removed in the future, but for now its just for testing certain functions
-    found_gemm = re.search(r'\b' + gemm_match + r'\b',function_name)
-    if found_gemm:
+    found_blas = re.search(r'\b' + blas_match + r'\b',function_name)
+    found_rot = re.search(r'\b' + rot_match + r'\b',function_name)
+    if found_blas:
+        if found_rot: # don't generate these
+            continue
         pass
     else:
         continue
