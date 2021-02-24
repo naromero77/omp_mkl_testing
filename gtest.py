@@ -25,59 +25,6 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         with open(rootDir+"/"+fname) as f:
             functions.append(json.load(f))
         
-#['dasum', [['MKL_INT*', 'double*', 'MKL_INT*', 'double'], ['in', 'in', 'in', 'return'], ['n', 'x', 'incx', 'result']]]
-
-blas1 = [
-    ["cblas_dasum",
-     [ "int", "double*", "int", "double"],
-     [ "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "result"],
-     [ "1", "n", "1", "1"] ],
-    ["cblas_daxpy",
-     [ "int", "double", "double*", "int","double*", "int"],
-     [ "in", "in", "in", "in", "inout", "in"],
-     [ "n", "a", "x", "incx","y", "incy"],
-     [ "1", "1", "n", "1", "n", "1"] ],
-    ["cblas_ddot",
-     [ "int", "double*", "int", "double*", "int","double"],
-     [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"],
-     [ "1", "n", "1", "n", "1", "1"] ],
-    ["cblas_dnrm2",
-     [ "int", "double*", "int", "double"],
-     [ "in", "in", "in", "return" ],
-     [ "n", "x", "incx", "result"],
-     [ "1", "n", "1", "1", "1"] ],
-    ["cblas_drotg",
-     [ "double*", "double*", "double*", "double*"],
-     [ "inout", "inout", "out", "out" ],
-     [ "da", "db", "c", "s"],
-     [ "1","1", "1", "1"] ],
-    ["cblas_sdot",
-     [ "int", "float*", "int", "float*", "int","float"],
-     [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"],
-     [ "1", "n", "1", "n", "1", "1"] ]
- ]
-
-blas2 = [
-    ["cblas_dgemv",
-     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
-     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
-     ["Layout", "TransA", "M", "N", "alpha", "A", "lda", "X", "incX", "beta", "Y", "incY"],
-     ["1", "1", "1", "1", "1", "max(N,M)*max(N,M)", "1", "(1+(max(N,M)-1)*abs(incX))", "1", "1", "(1+(max(N,M)-1)*abs(incY))", "1"]
-    ]
-]
-
-blas3 = [
-    ["cblas_dgemm",
-     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
-     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
-     ["Layout", "TransA", "TransB", "M", "N", "K", "alpha", "A", "lda", "B", "ldb", "beta", "C", "ldc"],
-     ["1", "1", "1", "1", "1", "1", "1", "max(M,K)*max(M,K)", "1", "max(N,K)*max(N,K)", "1", "1", "max(N,M)*max(N,M)", "1"]
-    ]
-]
-
 # Supported functions
 # '.' is equivalent to '?' wildcard
 gemm_match = 'cblas_.gemm'
