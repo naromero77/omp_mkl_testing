@@ -4,7 +4,7 @@ ifdef TIMEOUT
 	TIMEOUT = timeout -k 5s $(OVO_TIMEOUT)
 endif
 
-MATH_LIB_FLAGS=-mkl
+MATH_LIB_FLAGS=-fsycl -qmkl
 
 SRC = $(wildcard *.cpp)
 .PHONY: exe
@@ -14,7 +14,7 @@ pEXE = $(wildcard *.exe)
 .PHONY: run
 run: $(addprefix run_, $(basename $(pEXE)))
 
-CXXFLAGS = -fiopenmp -fopenmp-targets=spir64 -D__STRICT_ANSI__
+CXXFLAGS = -fiopenmp -fopenmp-targets=spir64 -DMKL_ILP64
 
 %.exe: %.cpp
 	-$(CXX) $(CXXFLAGS) $(MATH_LIB_FLAGS) $< -o $@

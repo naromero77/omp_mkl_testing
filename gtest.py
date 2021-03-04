@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import jinja2,os,json
+import re
 from collections import namedtuple
 
 #
@@ -13,7 +14,7 @@ templateLoader = jinja2.FileSystemLoader(searchpath=os.path.join(dirname, "templ
 templateEnv = jinja2.Environment(loader=templateLoader)
 
 
-template = templateEnv.get_template(f"sdot2.cpp.jinja2")
+template = templateEnv.get_template(f"gemm.cpp.jinja2")
 functions = []
 # read in the json from the header parser
 # Set the directory you want to start from
@@ -24,70 +25,31 @@ for dirName, subdirList, fileList in os.walk(rootDir):
         with open(rootDir+"/"+fname) as f:
             functions.append(json.load(f))
         
-        
-#print(functions)
+# Supported functions
+# '.' is equivalent to '?' wildcard
+# blas_match = 'cblas_.gemm'
+blas_match = 'cblas_.....'
+rot_match = 'cblas_.rot.'
 
-#['dasum', [['MKL_INT*', 'double*', 'MKL_INT*', 'double'], ['in', 'in', 'in', 'return'], ['n', 'x', 'incx', 'result']]]
-
-blas1 = [
-    ["cblas_dasum",
-     [ "int", "double*", "int", "double"],
-     [ "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "result"],
-     [ "1", "n", "1", "1"] ],
-    ["cblas_daxpy",
-     [ "int", "double", "double*", "int","double*", "int"],
-     [ "in", "in", "in", "in", "inout", "in"],
-     [ "n", "a", "x", "incx","y", "incy"],
-     [ "1", "1", "n", "1", "n", "1"] ],
-    ["cblas_ddot",
-     [ "int", "double*", "int", "double*", "int","double"],
-     [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"],
-     [ "1", "n", "1", "n", "1", "1"] ],
-    ["cblas_dnrm2",
-     [ "int", "double*", "int", "double"],
-     [ "in", "in", "in", "return" ],
-     [ "n", "x", "incx", "result"],
-     [ "1", "n", "1", "1", "1"] ],
-    ["cblas_drotg",
-     [ "double*", "double*", "double*", "double*"],
-     [ "inout", "inout", "out", "out" ],
-     [ "da", "db", "c", "s"],
-     [ "1","1", "1", "1"] ],
-    ["cblas_sdot",
-     [ "int", "float*", "int", "float*", "int","float"],
-     [ "in", "in", "in", "in", "in", "return" ],
-     [ "n", "dx", "incx", "dy", "incy", "result"],
-     [ "1", "n", "1", "n", "1", "1"] ]
- ]
-
-blas2 = [
-    ["cblas_dgemv",
-     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
-     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
-     ["Layout", "TransA", "M", "N", "alpha", "A", "lda", "X", "incX", "beta", "Y", "incY"],
-     ["1", "1", "1", "1", "1", "max(N,M)*max(N,M)", "1", "(1+(max(N,M)-1)*abs(incX))", "1", "1", "(1+(max(N,M)-1)*abs(incY))", "1"]
-    ]
-]
-
-blas3 = [
-    ["cblas_dgemm",
-     ["CBLAS_LAYOUT", "CBLAS_TRANSPOSE", "CBLAS_TRANSPOSE", "MKL_INT", "MKL_INT", "MKL_INT", "double", "double*", "MKL_INT", "double*", "MKL_INT", "double", "double*", "MKL_INT"],
-     ["in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "in", "inout", "in"],
-     ["Layout", "TransA", "TransB", "M", "N", "K", "alpha", "A", "lda", "B", "ldb", "beta", "C", "ldc"],
-     ["1", "1", "1", "1", "1", "1", "1", "max(M,K)*max(M,K)", "1", "max(N,K)*max(N,K)", "1", "1", "max(N,M)*max(N,M)", "1"]
-    ]
-]
-
-
-for function in blas3:
+for function in functions:
     function_name = function[0]
+
+    # This bit of code will be removed in the future, but for now its just for testing certain functions
+    found_blas = re.search(r'\b' + blas_match + r'\b',function_name)
+    found_rot = re.search(r'\b' + rot_match + r'\b',function_name)
+    if found_blas:
+        if found_rot: # don't generate these
+            continue
+        pass
+    else:
+        continue
+
     argument_types = function[1]
     argument_intents = function[2]
     argument_names = function[3]
     argument_sizes = function[4]
     print(f'{function_name}, {argument_types}, {argument_intents} {argument_sizes}')
+    print('argument_sizes = ', argument_sizes)
 
     # sanity check
     if len(argument_types) != len(argument_intents) or len(argument_types) != len(argument_names) or len(argument_intents) != len(argument_names):
@@ -112,6 +74,14 @@ for function in blas3:
             if "*" in atype:
                 l_aggregate_input_.append([size,atype[:len(atype)-1], name ])
             else:
+                # check if size is a single char and add single quotes
+                # for handling the FortranAPI
+                try:
+                    size.isalpha()
+                    if len(size) == 1:
+                        size = '\'' + size + '\''
+                except AttributeError:
+                    pass
                 l_scalar_input_.append([size,atype, name ])
             
         elif intent == "inout" or intent == "out":
@@ -141,6 +111,8 @@ for function in blas3:
     print(f'l_scalar_input_ {l_scalar_input_}')
     print(f'l_input_output_ {l_input_output_}')
     print(f'l_return_ {l_return_}')
+    print(f'l_output_ {l_output_}')
+    print(f'l_type_names_ {l_types_names_}')
     print(f'l_unique_type_ {l_unique_type_}')
 
     str_ = template.render( name_function=function_name,
