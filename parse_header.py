@@ -67,8 +67,11 @@ def varvalues(varname, vartype):
     matA = dimM*dimK
     matB = dimK*dimM
     matC = dimM*dimN
+    matAp = dimN*dimN
     vecX = dimX
     vecY = dimY
+    KL = 1 # sub-diagonal, unsure of reasonable values
+    KU = 1 # super-diagonal. unsure of reasonable values
     # rotations
     rotCos = math.cos(rotAngle)
     rotSin = math.sin(rotAngle)
@@ -118,10 +121,13 @@ def varvalues(varname, vartype):
         'a' : matA,
         'b' : matB,
         'c' : matC,
+        'ap': matAp,
         'x' : vecX,
         'dx' : vecX,
         'y' : vecY,
         'dy' : vecY,
+        'kl' : KL,
+        'ku' : KU,
         'trans' : Trans,
         'transa' : TransA,
         'transb' : TransB,
