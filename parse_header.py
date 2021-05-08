@@ -54,21 +54,25 @@ def varvalues(varname, vartype):
     # gemm, gemv, axpy, etc.
     dimM = 1000
     dimN = 1000
-    dimK = 1000
+    dimK = 400  # needs to be less than half-width due to ?TB?V functions
     dimX = 1000
     dimY = 1000
     incX = 1
     incY = 1
     alphaReal = realScalar
     betaReal = realScalar
-    LDA = dimM
-    LDB = dimK
-    LDC = dimN
+    LDA = max(1,dimM) # Trans = N; otherwise max(1,dimK)
+    # LDB = max(1,dimK) # Trans = N; oterhwise max(1,dimN)
+    LDB = max(1,dimN) # Trans = T; choose this one to satisy all constraints
+    LDC = max(1,dimM)
     matA = dimM*dimK
     matB = dimK*dimM
     matC = dimM*dimN
+    matAp = dimN*dimN
     vecX = dimX
     vecY = dimY
+    KL = 1 # sub-diagonal, unsure of reasonable values
+    KU = 1 # super-diagonal. unsure of reasonable values
     # rotations
     rotCos = math.cos(rotAngle)
     rotSin = math.sin(rotAngle)
@@ -77,14 +81,14 @@ def varvalues(varname, vartype):
     if FortranAPI:
         Trans = 'N'
         TransA = 'N'
-        TransB = 'N'
+        TransB = 'T'
         Uplo = 'U'
         Side = 'L'
         Diag = 'U' # need to be fixed
     else: # CblasAPI
         Trans = 'CblasNoTrans'
         TransA = 'CblasNoTrans'
-        TransB = 'CblasNoTrans'
+        TransB = 'CblasTrans'
         Uplo = 'CblasUpper'
         Side = 'CblasLeft'
         Diag = 'CblasNonUnit'
@@ -118,10 +122,13 @@ def varvalues(varname, vartype):
         'a' : matA,
         'b' : matB,
         'c' : matC,
+        'ap': matAp,
         'x' : vecX,
         'dx' : vecX,
         'y' : vecY,
         'dy' : vecY,
+        'kl' : KL,
+        'ku' : KU,
         'trans' : Trans,
         'transa' : TransA,
         'transb' : TransB,
