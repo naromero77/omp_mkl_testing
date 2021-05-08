@@ -203,18 +203,18 @@ int main( int argc, char* argv[] )
        {%- if intent == "out" or intent == "inout" %}
 
        // tolerance
-       {{t}} tol;
+       {{t}} {{name}}_tol;
 
        {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-       tol.real = 0.15;
-       tol.imag = 0.15;
+       {{name}}_tol.real = 0.01;
+       {{name}}_tol.imag = 0.01;
        {%- else %}
-       tol = 0.1;
+       {{name}}_tol = 0.01;
        {%- endif %}
 
          {%- if pointer %}
 	   for(int i=0;i<{{size}};i++) {
-             if (not(almost_equal({{name}}_gpu[i], {{name}}_cpu[i], tol))) {
+             if (not(almost_equal({{name}}_gpu[i], {{name}}_cpu[i], {{name}}_tol))) {
 	     std::cerr << "i: " << i << std::endl;
 	     {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
 	     std::cerr << "Expected: " << {{name}}_cpu[i].imag << " Got: " << {{name}}_gpu[i].imag << std::endl;
@@ -226,7 +226,7 @@ int main( int argc, char* argv[] )
              }       
            }
         {%- else %}
-             if (not(almost_equal({{name}}_gpu, {{name}}_cpu, tol))) {
+             if (not(almost_equal({{name}}_gpu, {{name}}_cpu, {{name}}_tol))) {
              {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
              std::cerr << "Expected: " << {{name}}_cpu.imag << " Got: " << {{name}}_gpu.imag << std::endl;
              std::cerr << "Expected: " << {{name}}_cpu.real << " Got: " << {{name}}_gpu.real << std::endl;
