@@ -225,9 +225,9 @@ int main( int argc, char* argv[] )
 	     cerr << "Expected: " << {{name}}_cpu[i].imag << " Got: " << {{name}}_gpu[i].imag << endl;
 	     cerr << "Expected: " << {{name}}_cpu[i].real << " Got: " << {{name}}_gpu[i].real << endl;
 	     {%- else %}
-      	     std::cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << std::endl;
+             cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << endl;
 	     {%- endif %}
-	     std::exit(112);
+	     exit(112);
              }       
            }
         {%- else %}
