@@ -5,12 +5,16 @@
 using namespace std;
 
 {%- for t in l_unique_type %}
-bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+bool almost_equal({{t}} x, {{t}} gold, {{t}} rel_tol, {{t}} abs_tol) {
+  // Based on this Python implementation
+  https://docs.python.org/3/library/math.html#math.isclose
+
   bool close_enough = false;
   {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-  close_enough = (std::abs((gold.real-x.real)/gold.real) <= tol.real) && (std::abs((gold.imag-x.imag)/gold.imag) <= tol.real);
+  close_enough = ((abs(gold.real-x.real) <= max(rel_tol.real * max(abs(gold.real), abs(x.real)), abs_tol.real)) &&
+                  (abs(gold.imag-x.imag) <= max(rel_tol.imag * max(abs(gold.imag), abs(x.imag)), abs_tol.imag)));
   {%- else %}
-  close_enough = (std::abs((gold - x)/gold) <= tol);
+  close_enough = (abs(gold-x) <= max(rel_tol * max(abs(gold), abs(x)), abs_tol));
   {%- endif %}
 
   return close_enough;
