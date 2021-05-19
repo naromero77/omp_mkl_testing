@@ -42,6 +42,9 @@ def varvalues(varname, vartype):
     Pointers types are gives sizes, but scalars are given initial values.
 
     Inputs is the variable name from the header file as obtain by fparse function.
+
+    Input parameters are not checked for compatbility with the MKL function that used them.
+    Some incompatibilities are noted and enforced with assert statements.
     '''
 
     FortranAPI = False # controls some operations, e.g. transpose, uplo,
@@ -54,9 +57,12 @@ def varvalues(varname, vartype):
     # gemm, gemv, axpy, etc.
     dimM = 1000
     dimN = 1000
-    dimK = 400  # needs to be less than half-width due to ?TB?V functions
+    dimK = 1000  # needs to be set manually to half-width due to ?TB?V functions
     dimX = 1000
     dimY = 1000
+    # dimensions are currently constrained because matrix dimensions are not
+    # consistently name, e.g. dimA = M-by-K in some routines and M-by-N in others
+    assert (dimM == dimN == dimK == dimX == dimY)
     incX = 1
     incY = 1
     alphaReal = realScalar
@@ -92,7 +98,7 @@ def varvalues(varname, vartype):
         Uplo = 'CblasUpper'
         Side = 'CblasLeft'
         Diag = 'CblasNonUnit'
-        Layout = 'CblasRowMajor' # only exist for Cblas API
+        Layout = 'CblasColMajor' # only exists for Cblas API, make it behave like the Fortran API
     result = 1
 
     # Coverage for batch and batch_strided interfaces are needed here

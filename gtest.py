@@ -30,6 +30,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 # blas_match = 'cblas_.gemm'
 blas_match = 'cblas_.....'
 rot_match = 'cblas_.rot.'
+specialK_match = 'cblas_..b.v' # K for these functions need to be scaled down by at least a factor of 2
 
 for function in functions:
     function_name = function[0]
@@ -37,6 +38,8 @@ for function in functions:
     # This bit of code will be removed in the future, but for now its just for testing certain functions
     found_blas = re.search(r'\b' + blas_match + r'\b',function_name)
     found_rot = re.search(r'\b' + rot_match + r'\b',function_name)
+    found_specialK = re.search(r'\b' + specialK_match + r'\b',function_name)
+
     if found_blas:
         if found_rot: # don't generate these
             continue
@@ -64,6 +67,9 @@ for function in functions:
     l_types_names_ = []
     # look at argument types and intents
     for atype, intent, name, size  in zip(argument_types,argument_intents,argument_names,argument_sizes) :
+        if found_specialK:
+            if name == "K": # scaled down by at least a factor of 2
+                size = int(size/2)
         if intent != "return":
             if "*" in atype:
                 l_types_names_.append( [size,True, intent,atype[:len(atype)-1], name] )

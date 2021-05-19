@@ -2,14 +2,19 @@
 #include <cmath>
 #include "mkl.h"
 #include "mkl_omp_offload.h"
+using namespace std;
 
 {%- for t in l_unique_type %}
-bool almost_equal({{t}} x, {{t}} gold, {{t}} tol) {
+bool almost_equal({{t}} x, {{t}} gold, {{t}} rel_tol, {{t}} abs_tol) {
+  // Based on this Python implementation
+  https://docs.python.org/3/library/math.html#math.isclose
+
   bool close_enough = false;
   {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-  close_enough = (std::abs((gold.real-x.real)/gold.real) <= tol.real) && (std::abs((gold.imag-x.imag)/gold.imag) <= tol.real);
+  close_enough = ((abs(gold.real-x.real) <= max(rel_tol.real * max(abs(gold.real), abs(x.real)), abs_tol.real)) &&
+                  (abs(gold.imag-x.imag) <= max(rel_tol.imag * max(abs(gold.imag), abs(x.imag)), abs_tol.imag)));
   {%- else %}
-  close_enough = (std::abs((gold - x)/gold) <= tol);
+  close_enough = (abs(gold-x) <= max(rel_tol * max(abs(gold), abs(x)), abs_tol));
   {%- endif %}
 
   return close_enough;
@@ -190,9 +195,9 @@ int main( int argc, char* argv[] )
 
 {%- if l_return %}
 
-  if (!almost_equal({{l_return[0][2]}}_gpu, {{l_return[0][2]}}_cpu, 0.1)) {
-    std::cerr << "Expected: " << {{l_return[0][2]}}_cpu << " Got: " << {{l_return[0][2]}}_gpu << std::endl;
-    std::exit(112);
+  if (!almost_equal({{l_return[0][2]}}_gpu, {{l_return[0][2]}}_cpu, 0.05, 0.20)) {
+    cerr << "Expected: " << {{l_return[0][2]}}_cpu << " Got: " << {{l_return[0][2]}}_gpu << endl;
+    exit(112);
   }
 
 {%- endif %}
@@ -203,37 +208,41 @@ int main( int argc, char* argv[] )
        {%- if intent == "out" or intent == "inout" %}
 
        // tolerance
-       {{t}} {{name}}_tol;
+       {{t}} {{name}}_rel_tol;
+       {{t}} {{name}}_abs_tol;
 
        {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-       {{name}}_tol.real = 0.01;
-       {{name}}_tol.imag = 0.01;
+       {{name}}_rel_tol.real = 0.05;
+       {{name}}_rel_tol.imag = 0.05;
+       {{name}}_abs_tol.real = 0.20;
+       {{name}}_abs_tol.imag = 0.20;
        {%- else %}
-       {{name}}_tol = 0.01;
+       {{name}}_rel_tol = 0.05;
+       {{name}}_abs_tol = 0.20;
        {%- endif %}
 
          {%- if pointer %}
 	   for(int i=0;i<{{size}};i++) {
-             if (not(almost_equal({{name}}_gpu[i], {{name}}_cpu[i], {{name}}_tol))) {
-	     std::cerr << "i: " << i << std::endl;
+             if (not(almost_equal({{name}}_gpu[i], {{name}}_cpu[i], {{name}}_rel_tol, {{name}}_abs_tol))) {
+	     cerr << "i: " << i << endl;
 	     {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-	     std::cerr << "Expected: " << {{name}}_cpu[i].imag << " Got: " << {{name}}_gpu[i].imag << std::endl;
-	     std::cerr << "Expected: " << {{name}}_cpu[i].real << " Got: " << {{name}}_gpu[i].real << std::endl;
+	     cerr << "Expected: " << {{name}}_cpu[i].imag << " Got: " << {{name}}_gpu[i].imag << endl;
+	     cerr << "Expected: " << {{name}}_cpu[i].real << " Got: " << {{name}}_gpu[i].real << endl;
 	     {%- else %}
-      	     std::cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << std::endl;
+             cerr << "Expected: " << {{name}}_cpu[i] << " Got: " << {{name}}_gpu[i] << endl;
 	     {%- endif %}
-	     std::exit(112);
+	     exit(112);
              }       
            }
         {%- else %}
-             if (not(almost_equal({{name}}_gpu, {{name}}_cpu, {{name}}_tol))) {
+             if (not(almost_equal({{name}}_gpu, {{name}}_cpu, {{name}}_rel_tol, {{name}}_abs_tol))) {
              {%- if t == "MKL_Complex8" or t == "MKL_Complex16" %}
-             std::cerr << "Expected: " << {{name}}_cpu.imag << " Got: " << {{name}}_gpu.imag << std::endl;
-             std::cerr << "Expected: " << {{name}}_cpu.real << " Got: " << {{name}}_gpu.real << std::endl;
+             cerr << "Expected: " << {{name}}_cpu.imag << " Got: " << {{name}}_gpu.imag << endl;
+             cerr << "Expected: " << {{name}}_cpu.real << " Got: " << {{name}}_gpu.real << endl;
              {%- else %}
-             std::cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << std::endl;
+             cerr << "Expected: " << {{name}}_cpu << " Got: " << {{name}}_gpu << endl;
 	     {%- endif %}
-             std::exit(112);
+             exit(112);
              }       
         {%- endif %}
 
